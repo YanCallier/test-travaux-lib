@@ -28,7 +28,8 @@ class CompagnyInfo extends React.Component {
   render() {
     return (
       <div className='margin-bottom-20'>
-        <strong>{devis.company.name}</strong><br />
+        <strong className='big-blue'>Société</strong><br />
+        {devis.company.name}<br />
         {devis.company.address}<br />
         {devis.company.postalCode + ' ' + devis.company.city}<br />
         {devis.company.phoneNumber}<br />
@@ -66,6 +67,7 @@ class Header extends React.Component {
   render() {
     return (
       <div className='header margin-bottom-20'>
+        <CompagnyInfo />
         <ClientInfo />
         <ChantierInfo />
         <DateInfos />
@@ -101,6 +103,19 @@ class PrestationRow extends React.Component {
         <td className='prestations-center'>{this.props.tauxTVA}</td>
         <td className='prestations-center'>{this.props.montantTVA}</td>
         <td className='prestations-center'>{this.props.prixTTC}</td>
+      </tr>
+    );
+  }
+}
+
+class TotalRow extends React.Component {
+  render() {
+    return (
+      <tr>
+        <th colSpan="9" className='total-row'>
+          {"Total HT " + this.props.category + " : " + this.props.totalHT}<br />
+          {"Total TTC " + this.props.category + " : " + this.props.totalTTC}
+        </th>
       </tr>
     );
   }
@@ -164,31 +179,32 @@ class Prestations extends React.Component {
           if (this.state.category === "locations") {
             const ligneSup = [];
             // for (let i = 0; i < places.length; i++) {
-            //   //let locationLigne = ligne;
-            //   // locationLigne.quantite = places[i].quantite;
-            //   // console.log(places[i].quantite);
-            //   // locationLigne.prixHT = ligne.prixUnitaireHT * locationLigne.quantite;
-            //   // locationLigne.montantTVA = (ligne.tauxTVA / 100) * locationLigne.prixHT;
-            //   // locationLigne.prixTTC = locationLigne.prixHT + locationLigne.montantTVA;
-            //   // let matchLoc = devis.locations.find(loc => loc.uuid === places[i].uuid);
-            //   // locationLigne.locations = matchLoc.label;
-            //   //ligneSup.push(locationLigne);
+            // let locationLigne = ligne;
+            // locationLigne.quantite = places[i].quantite;
+            // console.log(places[i].quantite);
+            // locationLigne.prixHT = ligne.prixUnitaireHT * locationLigne.quantite;
+            // locationLigne.montantTVA = (ligne.tauxTVA / 100) * locationLigne.prixHT;
+            // locationLigne.prixTTC = locationLigne.prixHT + locationLigne.montantTVA;
+            // let matchLoc = devis.locations.find(loc => loc.uuid === places[i].uuid);
+            // locationLigne.locations = matchLoc.label;
+            // igneSup.push(locationLigne);
             // }
-            for (const place of places) {
+            for (let i = 0; i < places.length; i++) {
               let locationLigne = {};
               locationLigne.designation = ligne.designation;
               locationLigne.description = ligne.description;
               locationLigne.normalizedIdentifier = ligne.normalizedIdentifier;
               locationLigne.prixUnitaireHT = ligne.prixUnitaireHT;
-              locationLigne.quantite = place.quantite;
+              locationLigne.quantite = places[i].quantite;
               locationLigne.unite = ligne.unite;
               locationLigne.uniteLabel = ligne.uniteLabel;
               locationLigne.prixHT = ligne.prixUnitaireHT * locationLigne.quantite;
               locationLigne.tauxTVA = ligne.tauxTVA;
               locationLigne.montantTVA = parseFloat(((ligne.tauxTVA / 100) * locationLigne.prixHT).toFixed(1));
               locationLigne.prixTTC = (locationLigne.prixHT + locationLigne.montantTVA).toFixed(1);
+              locationLigne.uuid = ligne.uuid + i;
               locationLigne.lots = ligne.lots;
-              let matchLoc = devis.locations.find(loc => loc.uuid === place.uuid);
+              let matchLoc = devis.locations.find(loc => loc.uuid === places[i].uuid);
               locationLigne.locations = matchLoc.label;
 
               ligneSup.push(locationLigne);
@@ -200,13 +216,6 @@ class Prestations extends React.Component {
             }
           }
         }
-        // else {
-        //   ligne.locations = 
-        //   for (const place of places) {
-        //     ligne.locations += 
-        //   }
-        // }
-
         prestations.push(ligne);
       })
     });
@@ -225,7 +234,8 @@ class Prestations extends React.Component {
           key={category.label}
         />
       );
-      // let matchPresta = prestations.filter(presta => presta.lot === category.label);
+      let totalPrestationsHT = 0;
+      let totalPrestationsTTC = 0;
       prestations.forEach((prestation) => {
         if (prestation[this.state.category] === category.label) {
           rows.push(
@@ -242,17 +252,19 @@ class Prestations extends React.Component {
               prixTTC={prestation.prixTTC}
             />
           );
+          totalPrestationsHT += parseFloat(prestation.prixHT)
+          totalPrestationsTTC += parseFloat(prestation.prixTTC);
         }
       });
+      rows.push(
+        <TotalRow
+          category={category.label}
+          key={'total' + category.label}
+          totalHT={totalPrestationsHT.toFixed(1)}
+          totalTTC={totalPrestationsTTC.toFixed(1)}
+        />
+      );
     });
-
-
-
-    // prestations.forEach((prestation) => {
-    //   console.log(rows);
-    //   // console.log(prestation.lot);
-    //   // console.log(rows.indexOf(prestation.lot));
-    // })
 
     return (
       <div>
@@ -278,16 +290,105 @@ class Prestations extends React.Component {
   }
 }
 
+class ShowPresta extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      show: false
+    }
+    this.handleClickPresta = this.handleClickPresta.bind(this);
+  }
 
+  handleClickPresta(e) {
+    this.setState({
+      show: !this.state.show
+    });
+  }
+
+  render() {
+
+    return (
+      <div >
+        <h2 onClick={this.handleClickPresta} className='show-presta-button'>
+          <div>Détails des prestations</div>
+          <div className={this.state.show ? "rotate-90" : "rotate90"}>&#10097;</div>
+        </h2>
+        {this.state.show && <Prestations />}
+      </div>
+    );
+  }
+}
+
+
+class Modalite extends React.Component {
+  render() {
+    return (
+      <div className='margin-bottom-20'>
+        <strong>{this.props.label}</strong><br />
+        Pourcentage : {this.props.pourcentage} %<br />
+        Montant : {this.props.montant} €<br />
+      </div>
+    );
+  }
+}
+
+class Modalites extends React.Component {
+  render() {
+    const elements = [];
+    let index = 0;
+    devis.modalitesPaiement.forEach((modalite) => {
+      index++
+      elements.push(
+        <Modalite
+          label={modalite.label}
+          montant={modalite.montant}
+          pourcentage={modalite.pourcentage}
+          key={'modalite' + index}
+        />
+      );
+    });
+    return (
+      <div>
+        <h2>Modalités de paiement</h2>
+        {elements}
+      </div>
+    );
+  }
+}
+
+class PxTotal extends React.Component {
+  render() {
+    return (
+      <div className='total'>
+        Total avant remise : {devis.prixTotalHTAvantRemise} €<br />
+        Remise : {devis.montantRemise} €<br />
+        Prix total HT : {devis.prixTotalHT} €<br />
+        Dont fournitures : {devis.prixTotalFournitureHT} €
+        <h2>{'Prix total TTC : ' + devis.prixTotalTTC + ' €'}</h2>
+      </div>
+    );
+  }
+}
+
+class Footer extends React.Component {
+  render() {
+    return (
+      <div className='footer'>
+        <Modalites />
+        <PxTotal />
+      </div>
+    );
+  }
+}
 
 function App() {
 
   return (
     <div>
       <TitleDevis />
-      <CompagnyInfo />
       <Header />
-      <Prestations />
+      <ShowPresta />
+      <Footer />
     </div>
   );
 }
